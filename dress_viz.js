@@ -1,0 +1,528 @@
+
+// true to show only the 10 nominees each year (in dot viz)
+// false to see dots for all dresses 
+var noms_only = true
+
+
+$(document).ready(function(){
+    var years = [2004,2015]
+    var h = 400;
+    var w = 600;
+    var label_margin = 50;
+    var x_allow = 40;
+    var y_allow = 50;
+    var padding = 10;
+
+    var pearl_padding = 10; //pixels between pearls
+    var r = 12;
+    if(!noms_only){r=5;}
+    
+    var area_h = h/4
+    var key_h = 2000
+    var key_w = w/4
+
+    var emphasis_colors = [
+	'#7734B5', //     violet
+	'#8E66F8', //     lavender
+	'#B71BD0', //     orchid
+	'#FF33CC', //     hot pink
+	'#D81A63', //     bright red
+	'#F45859', //     inferior salmon
+	'#FF7D27', //     bright orange
+	'#F9BB0B', //     warmer yellow
+	'#FDE101', // bright yellow    
+	'#A8D64E', //     keylime green
+	'#86B702', //     moss green
+	'#41A707', //     kelly green
+	'#1F98A4', //     pool green
+	'#00E1FA', // neon sky blue
+	'#0099EC', //     atlantic blue
+	'#146EFF', //     'lectric blue
+	'#2E3AC4', //     very boring navy blue
+	'#302399', //     deep blue violet
+	'#6b6b72', //     dark bluey gray
+	'#000000', //     black?
+	'#ffffff', //     white?
+	'#572981', //     dark eggplant
+
+    ]
+
+    
+
+    //svg for main viz
+    var svg = d3.select('#viz_div_L').append('svg')
+	.attr('id','dots_svg')
+	.attr('height',h)
+	.attr('width',w+label_margin)
+	.append('g')
+	.attr('transform','translate('+label_margin+',0)');
+
+    //svg for designer key
+    var key_div = d3.select('#viz_div_R').append('div')
+	.attr('id','key_div')
+
+    var key_svg = key_div.append('svg')
+	.attr('id','key_svg')
+	.attr('height',key_h)
+	.attr('width',key_w)
+
+    //svg for area chart
+    var area_svg = d3.select('#viz_div_L').append('svg')
+	.attr('id','area_svg')
+	.attr('width',w+label_margin)
+	.attr('height',area_h)
+	.append('g')
+	.attr('transform','translate('+label_margin+',0)');
+
+    d3.json(json_filename,function(error,json){
+	data = d3.nest()
+	    .key(function(d){return d.year})
+	    .entries(json)
+
+	json_data = json
+	// main visualization of nominees
+	var max_num_dots = Math.max.apply(
+	    null,
+	    $.map(data,function(d){return d['values'].length})
+	    );
+	if (noms_only){max_num_dots = 10}; //delete if not displaying noms only
+	var x = d3.scale.ordinal()
+	    .rangePoints([x_allow,w-x_allow])
+	    .domain(d3.range(2004,2015))
+	var y = d3.scale.linear()
+	    .range([r+pearl_padding,h-padding])
+	    .domain([0,max_num_dots])
+
+	//shade boxes for nominee types
+	function shade_name(d){
+	    if (d==0){
+		return 'Leading Role'
+	    }
+	    else{
+		return 'Supporting Role'
+	    }
+	}
+	var shade_boxes = svg.selectAll('.shade_g')
+	    .data([0,1])
+	    .enter().append('g')
+	    .attr('class','shade_g')	    
+	shade_boxes.append('rect')
+	    .attr('x',-(x_allow))
+	    .attr('y',function(d){return r+d*(h/2-2*r)})
+	    .attr('width',w+padding*2)
+	    .attr('height',y(4))
+	    .style('fill','rgb(250,250,250)')
+	shade_boxes.append('text')
+	    .attr('class','shade-text')
+	    .attr('transform','rotate(-90)')
+	    .attr('y',0)
+	    .attr('dy','-0.5em')
+	    .attr('x',function(d){return -(y(2+5*d))})
+	    .style('text-anchor','middle')
+	    .style('fill','darkgray')
+	    .text(function(d){return shade_name(d).toUpperCase()})
+	
+	//create a 'g' column for each year
+	var years = svg.selectAll('.year-column')
+	    .data(data)
+	    .enter().append('g')
+	    .attr('class','year-column')
+	years
+	    .append('line')
+	    .attr('x1',function(d){return x(d.key)})
+	    .attr('x2',function(d){return x(d.key)})
+	    .attr('y1',0)
+	    .attr('y2',function(d){return y(9)+r+pearl_padding; })
+	    .style('stroke','gold')
+	    .style('stroke-width','2px')
+	    .attr('class','vert through')
+	years
+	    .append('line')
+	    .attr('x1',function(d){return (x(d.key)+x(d.key+1))/2})
+	    .attr('x2',function(d){return (x(d.key)+x(d.key+1))/2})
+	    .attr('y1',y_allow+padding-r-pearl_padding)
+	    .attr('y2',function(d){return y(9)+r+pearl_padding; })
+	    .style('stroke','gold')
+	    .style('stroke-width','2px')
+	    .attr('class','vert between')
+	years
+	    .append('text')
+	    .attr('x',function(d){return x(d.key)})
+	    .attr('y',h-5)
+	    .style('text-anchor','middle')
+	    .text(function(d){return d.key})
+	    .style('fill','darkgray')
+	    .style('font-family','arial')
+	    .attr('class','year-label')
+    
+
+	var nominees = years.selectAll('.dot')
+	    .data(function(d){ 
+		if (noms_only){
+		    return d.values.filter(function(g){
+			return g.class.indexOf('nom') >= 0})
+		}
+		else { return d.values; }
+	    })
+	    .enter()
+	nominees
+	    .append('line')
+	    .attr('x1',function(d){
+		return x(d.year)-r-2*pearl_padding;
+	    })
+	    .attr('y1',function(d,i){return y(i);})
+	    .attr('x2', function(d) {
+		return x(d.year)+r+2*pearl_padding;
+	    })
+	    .attr('y2',function(d,i){return y(i);})
+	    .style('stroke','gold')
+	    .style('stroke-width','2px')
+	nominees
+	    .append('circle')
+	    .attr('cx',function(d){return x(d.year)})
+	    .attr('cy',function(d,i){return y(i);})
+	    .attr('r',r)
+	    .attr('id',function(d){
+		dotid = d.name.toLowerCase()
+		dotid = dotid.replace('.','')
+		dotid = dotid.replace(' ','')
+		dotid = dotid.replace(' ','')
+		dotid = dotid.replace("'",'')
+		dotid = dotid+d.year
+		return dotid 
+	    })
+	    .attr('class',function(d){return 'dot '+d.class+' '+d.des})
+	    .attr('title',function(d){
+		var tipstring = '<span class="tt-act">'+d.name
+		    +'</span><br><span class="tt-role">'+d.role.replace('Actress','Lead')
+		    +'</span><br><span class="tt-des">'+d.dress+'</span>';
+		return tipstring;
+	    })
+	function tooltips(){
+	    $('.dot').tooltip({ 
+		container:'#viz_div',
+		html:true,
+		placement:'left'
+	    })
+	};
+	tooltips()
+
+
+	// interactive key of designers
+	// re-slice the data for key
+	key_data = d3.nest()
+	    .key(function(d){return d.des})
+	    .rollup(function(d){
+		var name = d[0].dress
+		if(d[0].des=='other'){
+		    name = 'Other'
+		}
+		return {
+		    'name':name,
+		    'count':d3.sum(d,function(g){return 1})
+		}
+	    })
+	    .entries(json)
+
+	key_data.sort(function(a,b){
+	    var to_bottom = ['Other','did not attend','unknown']
+	    if ($.inArray(a.values.name,to_bottom)+1) { return 1; }
+	    if ($.inArray(b.values.name,to_bottom)+1) { return -1; }
+	    var ans = b.values.count - a.values.count
+	    if ( ans==0 ) {
+		if ( a.key < b.key ) { return -1; }
+		else { return 1; }
+	    }
+	    return ans;
+	});
+
+	var key_y = d3.scale.ordinal()
+	    .rangeBands([0,key_h-25],0.2,0)
+	    .domain(key_data.map(function(d){return d.key}))
+
+	var kbd = d3.select('#viz_div_R')
+	    .append('div')
+	    .attr('id','key_button_div')
+	var kbg = kbd.append('svg')
+	    .attr('id','key_button_svg')
+
+	kbg.append('rect')
+	    .attr('class','keybttn')
+	    .attr('x',0)
+	    .attr('y',7)
+	    .attr('width',key_w)
+	    .attr('height',20)
+	kbg.append('text')
+	    .attr('class','keybttntxt')
+	    .attr('x',key_w/2)
+	    .attr('dy','1.5em')
+	    .style('text-anchor','middle')
+	    .text('clear all')
+	    .style('fill','darkgray')
+
+	var key_boxes = key_svg.selectAll('.kg')
+	    .data(key_data)
+	    .enter().append('g')
+	    .attr('class','kg')
+	    .attr('title',function(d){return d.values.name})
+	    .attr('transform',function(d){
+		return 'translate(0,'+key_y(d.key)+')';
+	    })
+	key_boxes
+	    .append('rect')
+	    .attr('x',0)
+	    .attr('height',key_y.rangeBand())
+	    .attr('width',key_w)
+	    .attr('class',function(d){return 'kbox '+d.key})
+	    .attr('fill',function(d,i){
+		return emphasis_colors[i%emphasis_colors.length]})
+	key_boxes
+	    .append('text')
+	    .attr('x',key_w/2)
+	    .attr('dy','1.2em')
+	    .attr('class','ktxt')
+	    .style('text-anchor','middle')
+	    .style('fill','darkgray')
+	    .style('font-size','11')
+	    .text(function(d){return d.values.name.toUpperCase()})
+
+	// area chart at bottom
+	var area_des = 'versace'
+	var area_y = d3.scale.linear()
+	    .range([area_h-padding,padding])
+	    .domain([0,5])
+	var area = d3.svg.area()
+	    .x(function(d){return x(d.year)})
+	    .y0(area_y(0))
+	    .y1(function(d){return area_y(d.count)})
+	    // .interpolate('monotone')
+
+	function get_area_data(des){
+	    data = []
+	    function des_count(year){
+		return json
+		    .filter(function(d){return d.year == year;})
+		    .filter(function(d){return d.des == des;})
+		    .length
+	    };
+	    d3.range(2004,2015).forEach(function(y){
+		data.push({
+		    'year':y,
+		    'count':des_count(y)
+		})
+	    });
+	    var max_count = Math.max.apply(null,data.map(
+		function(d){return d.count}))
+	    area_y.domain([0,Math.max(5,max_count)])
+	    return data
+	}
+	var area_yAxis = d3.svg.axis()
+	    .scale(area_y)
+	    .orient('left')
+	    .ticks(3)
+	    .tickFormat(d3.format('d'))
+
+	// stripey background for area chart
+	area_svg.selectAll('rect')
+	    .data(d3.range(0,6))
+	    .enter().append('rect')
+	    .attr('class',function(d){
+		if(d%2){return 'stripe even'}
+		else{return 'stripe odd'}
+	    })
+	    .attr('x',padding)
+	    .attr('y',function(d){return area_y(d)})
+	    .attr('width',w-(padding*2))
+	    .attr('height',function(d){return area_y(d)-area_y(d+1)})
+
+	var area_graph = area_svg.append('path')
+	    .datum(get_area_data(area_des))
+	    .attr('class','area')
+	    .attr('d',area)
+	var area_ax = area_svg
+	    .append('g')
+	    .attr('transform','translate('+(x_allow-10)+',0)')
+	    .attr('class','y axis')
+	area_ax.call(area_yAxis)
+
+	// designer family highlighting
+	click_hold = []
+	function click_hold_pop(des){
+	    if(des === undefined){
+		des = click_hold[click_hold.length-1]
+	    }
+	    var i = click_hold.indexOf(des)
+	    click_hold.splice(i,1)
+	    return des
+	}
+	var emphasis = function(){
+	    return emphasis_colors[click_hold.length]
+	}
+	function lights_on(des){
+	    if( $.inArray(des,click_hold)+1 ){ return }
+	    d3.select('.kbox.'+des)
+		.transition()
+		.style('stroke','darkgray')
+	    d3.selectAll('.dot.'+des)
+		.transition()
+		.style('fill',emphasis)
+	    d3.selectAll('.dot.win.'+des)
+		.transition()
+		.attr('r',15)
+		.style('fill',emphasis)
+		.style('stroke-width','6px')
+	    update_area(des)
+	}
+	function lights_on_me(dot){
+	    dot_id = $(dot).attr('id')
+	    des = get_des(dot)
+	    if( $.inArray(des,click_hold)+1 ){ return }
+	    d3.select('#'+dot_id)
+		.transition()
+		.style('fill',emphasis)
+	    d3.select('#'+dot_id+'.win')
+		.transition()
+		.attr('r',15)
+		.style('fill',emphasis)
+		.style('stroke-width','6px')
+	    update_area(des);
+	}
+
+	function lights_off(des){
+	    if( $.inArray(des,click_hold)+1 ){ return }
+	    d3.select('.kbox.'+des)
+		.transition()
+		.style('stroke','')
+		.style('fill','')
+	    d3.selectAll('.dot.'+des)
+		.transition()
+		.style('fill','')
+	    d3.selectAll('.dot.win.'+des)
+		.transition()
+		.attr('r',r)
+		.style('fill','')
+		.style('stroke-width','')
+	}
+	function lights_off_me(dot){
+	    dot_id = $(dot).attr('id')
+	    des = get_des(dot)
+	    if( $.inArray(des,click_hold)+1 ){ return }	    
+	    d3.select('#'+dot_id)
+		.transition()
+		.style('fill','')
+	    d3.select('#'+dot_id+'.win')
+		.transition()
+		.attr('r',r)
+		.style('stroke-width','')
+		.style('fill','')
+	}
+
+	function get_des(thing){
+	    cls = $(thing).attr('class').split(' ');
+	    len = cls.length
+	    return cls[len-1]
+	}
+
+	function update_area(des){
+	    area_graph
+		.datum(get_area_data(des))
+		.transition()
+		.duration(400)
+		.attr('d',area)
+	    area_ax.transition().duration(400).call(area_yAxis)
+	}
+
+	// hover over a designer
+	$('rect.kbox').hover(
+	    //mouseover
+	    function(){
+		lights_on(get_des(this));
+		update_area(get_des(this));
+	    },
+	    //mouseout
+	    function(){
+		lights_off(get_des(this));
+	    }
+	)
+	// click on a designer 
+	$('rect.kbox').click(
+	    function(){
+		var des = get_des(this)
+		if( !($.inArray(des,click_hold)+1) ){
+		    lights_on(des)
+		    d3.select('.kbox.'+des)
+		    	.transition()
+		    	.style('fill',emphasis)
+		    click_hold.push(des);
+		    return
+		}
+		//otherwise, pop it from the array and turn it off
+		des = click_hold_pop(des)
+		lights_off(des)
+	    })
+	// hover over a dot
+	$('.dot').hover(
+	    function(){
+		lights_on_me(this);
+		update_area(get_des(this));
+	    },
+	    function(){
+		lights_off_me(this);
+	    }
+	)
+	// click on a dot
+	$('.dot').click(
+	    function(){
+		dot_id = $(this).attr('id')
+		des = d3.select('#'+dot_id).data()[0].des
+		if( !($.inArray(des,click_hold)+1) ){
+		    lights_on(des)
+		    d3.select('.kbox.'+des)
+		    	.transition()
+		    	.style('fill',emphasis)
+		    update_area(des)
+		    click_hold.push(des);
+		    return
+		}
+		des = click_hold_pop(des)
+		lights_off(des)
+	    }
+	)
+	$('.keybttn').click(
+	    function(){
+		while(click_hold.length > 0){
+		    des = click_hold_pop()
+		    lights_off(des)
+		}
+	    }
+	)//keybttn click
+
+    });//json
+
+});//document.ready
+
+// // extra colors
+// '#D523AE', // magenta
+// '#E21D6C', //    
+// '#9C0204', // dark oscar red
+// '#C11A77', // deepish red
+// '#EE4559', // lipstick red
+// '#F2746D', // salmon
+// '#FEF31F', // yellow
+// '#32945F', // pool green
+// '#0073DA', // 
+// '#1E6584', // dark cerulean
+// '#4EA7D1', // dusty blue
+// '#E86F11', // dark orange
+// '#84F42E', // bright ass green
+// '#ED76C9', // dusty rose
+// '#7F3A67', // plum
+// '#BEBF3B', // yellow green
+// '#2EAD4F', // green
+// '#4498C0', // dusty blue
+// '#377A08', // emerald
+// '#5E5DC4', // deep periwinkle
+// '#00AF96', // dark turquoise
+// '#2D4D35', // too-dark forest green
+// '#5775D0', // cornflower
+

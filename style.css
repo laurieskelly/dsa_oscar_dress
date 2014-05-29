@@ -1,0 +1,81 @@
+#viz_div_L{
+  display:inline;
+  float:left;
+  margin-top:50px;
+  margin-left:50px;
+}
+#viz_div_R{
+  display:inline;
+  float:left;
+  margin-top:50px;
+}
+
+/* DOTS */
+#dots_svg{
+  display:inline;
+}
+.dot {
+  fill: aliceblue;
+  stroke: lightgray;
+  stroke-width: 2px;
+}
+.dot.win {
+  stroke: gold;
+  stroke-width: 3px;
+}
+#dots_svg g.year-column text.year-label{
+    font-size:18px;
+    dy:-0.5em;
+}
+
+/* tooltips */
+span.tt-act{
+  color:gold;
+  font-size:18px;
+}
+span.tt-des{
+  color:#f9bb0b;
+  font-size:18px;
+}
+
+/* KEY */
+#key_div{
+  max-height:470px;
+  overflow-y:scroll;
+}
+.kbox {
+  pointer-events:all;
+  fill: gold;
+}
+.ktxt {
+  pointer-events:none;
+}
+.keybttn {
+  fill:whitesmoke;
+  pointer-events:all;
+}
+.keybttntxt {
+  pointer-events:none;
+}
+
+/* AREA */
+#area_svg{
+  display:block;
+}
+.area {
+  fill: darkgray;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: none;
+}
+.axis text{
+  fill: darkgray;
+}
+.stripe.even{
+  fill:rgb(243,243,243);
+}
+.stripe.odd{
+  fill:rgb(250,250,250);
+}

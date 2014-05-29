@@ -1,7 +1,7 @@
 
 #Oscar Dress
 
-![oscar dress screen cap](laurieskelly.github.com/dsa_oscar_dress/img/oscar_dress_cap.jpg
+![oscar dress screen cap](laurieskelly.github.com/dsa_oscar_dress/img/oscar_dress_cap.jpg)
 
 @bo-peng and I made a visualization with d3.js and bootstrap for the [datascope blog](http://www.datascopeanalytics.com/what-we-think/2014/03/03/dresses-at-the-oscars). 
 
